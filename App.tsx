@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { YearlyOverview } from './pages/YearlyOverview';
 import { ResetPassword } from './pages/ResetPassword';
+import { Profile } from './pages/Profile';
 import { Layout } from './components/Layout';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -28,7 +29,7 @@ const GlobalLoader = () => (
         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-bounce" />
       </div>
     </div>
-    
+
     <div className="absolute bottom-10 flex flex-col items-center gap-2 opacity-40">
       <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
       <span className="text-[10px] font-bold text-gray-600 tracking-[0.3em] uppercase">Engine v2.5</span>
@@ -38,15 +39,15 @@ const GlobalLoader = () => (
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return <GlobalLoader />;
   }
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return <Layout>{children}</Layout>;
 };
 
@@ -57,21 +58,29 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/yearly" 
+          <Route
+            path="/yearly"
             element={
               <ProtectedRoute>
                 <YearlyOverview />
               </ProtectedRoute>
-            } 
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
           />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

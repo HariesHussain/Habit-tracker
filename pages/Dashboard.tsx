@@ -13,6 +13,7 @@ export const Dashboard: React.FC = () => {
   const { logs, logSleep } = useSleep();
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [newHabitCategory, setNewHabitCategory] = useState('General');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -76,6 +77,13 @@ export const Dashboard: React.FC = () => {
     await addHabit(newHabitTitle, newHabitCategory);
     setNewHabitTitle('');
     setIsAddModalOpen(false);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    await deleteMultipleHabits(selectedIds);
+    setSelectedIds([]);
+    setIsDeleteConfirmOpen(false);
   };
 
   const cycleStatus = (habitId: string, dateStr: string, currentStatus: 'Completed' | 'Failed' | 'Neutral') => {
@@ -324,6 +332,63 @@ export const Dashboard: React.FC = () => {
                 Seal Protocol
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Delete Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 z-[95] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gray-900/95 backdrop-blur-2xl border border-gray-700/50 rounded-2xl px-6 py-4 flex items-center gap-4 shadow-2xl shadow-black/50">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <span className="text-emerald-400 font-black text-sm">{selectedIds.length}</span>
+              </div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Selected</span>
+            </div>
+            <div className="w-px h-8 bg-gray-700" />
+            <button
+              onClick={() => { setSelectedIds([]); }}
+              className="px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white transition-all font-black text-[9px] uppercase tracking-widest"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setIsDeleteConfirmOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+          <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] p-8 md:p-12 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300 text-center">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6">
+              <Trash2 className="w-8 h-8 text-rose-400" />
+            </div>
+            <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic mb-2">Confirm Wipe</h3>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mb-8">
+              {selectedIds.length} protocol{selectedIds.length > 1 ? 's' : ''} will be permanently erased
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all active:scale-95"
+              >
+                Abort
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                className="flex-1 py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all shadow-xl shadow-rose-600/30 active:scale-95"
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
