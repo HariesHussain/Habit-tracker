@@ -1,0 +1,5 @@
+{
+  "name": "Habit Tracker",
+  "description": "A high-performance, free-tier optimized habit and sleep tracker with multi-year analytics and offline-first reliability.",
+  "requestFramePermissions": []
+}
