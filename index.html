@@ -4,34 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Your description here">
-    <meta property="og:title" content="Your Open Graph Title" />
-    <meta property="og:description" content="Your Open Graph Description" />
-    <meta property="og:image" content="URL to your image" />
-    <meta property="og:url" content="https://yourcanonicalurl.com" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Your Twitter Title" />
-    <meta name="twitter:description" content="Your Twitter Description" />
-    <meta name="twitter:image" content="URL to your image" />
-    <link rel="canonical" href="https://yourcanonicalurl.com" />
+    <meta name="keywords" content="keyword1, keyword2">
+    <meta name="author" content="HariesHussain">
+    <meta property="og:title" content="Title Here">
+    <meta property="og:description" content="Your description here">
+    <meta property="og:image" content="URL to image here">
+    <meta property="og:url" content="Page URL here">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Title Here">
+    <meta name="twitter:description" content="Your description here">
+    <meta name="twitter:image" content="URL to image here">
     <link rel="preconnect" href="https://example.com">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'GA_TRACKING_ID');
+    </script>
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Your Website Name",
-        "url": "https://yourcanonicalurl.com"
+      "@context": "http://schema.org",
+      "@type": "WebSite",
+      "name": "Website Name",
+      "url": "URL of the website"
     }
     </script>
-    <noscript>
-        <link rel="stylesheet" href="styles-fallback.css">
-    </noscript>
-    <link rel="stylesheet" href="styles.css" loading="lazy">
-    <title>Your Page Title</title>
+    <title>Title Here</title>
 </head>
 <body>
-    <!-- Existing content goes here -->
-    <script>
-        // Your Google Analytics script here 
-    </script>
+    <header>
+        <h1>Welcome to Habit Tracker</h1>
+    </header>
+    <main>
+        <p>Your main content goes here.</p>
+    </main>
+    <footer>
+        <p>&copy; 2026 HariesHussain</p>
+    </footer>
 </body>
 </html>
