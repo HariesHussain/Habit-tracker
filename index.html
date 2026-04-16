@@ -1,46 +1,37 @@
-
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111827; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .loading-pulse { animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@emailjs/browser": "https://esm.sh/@emailjs/browser@^4.4.1"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    <meta name="description" content="Your description here">
+    <meta property="og:title" content="Your Open Graph Title" />
+    <meta property="og:description" content="Your Open Graph Description" />
+    <meta property="og:image" content="URL to your image" />
+    <meta property="og:url" content="https://yourcanonicalurl.com" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Your Twitter Title" />
+    <meta name="twitter:description" content="Your Twitter Description" />
+    <meta name="twitter:image" content="URL to your image" />
+    <link rel="canonical" href="https://yourcanonicalurl.com" />
+    <link rel="preconnect" href="https://example.com">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Your Website Name",
+        "url": "https://yourcanonicalurl.com"
+    }
+    </script>
+    <noscript>
+        <link rel="stylesheet" href="styles-fallback.css">
+    </noscript>
+    <link rel="stylesheet" href="styles.css" loading="lazy">
+    <title>Your Page Title</title>
 </head>
-<body class="bg-gray-950 text-gray-100 antialiased">
-    <div id="root"></div>
-    <!-- Entry point for Vite -->
-    <script type="module" src="/index.tsx"></script>
+<body>
+    <!-- Existing content goes here -->
+    <script>
+        // Your Google Analytics script here 
+    </script>
 </body>
 </html>
