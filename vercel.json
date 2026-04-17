@@ -1,5 +1,9 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    {
+      "source": "/((?!api/|assets/|robots\\.txt$|sitemap\\.xml$|google-site-verification\\.html$|BingSiteAuth\\.xml$|indexnow-key\\.txt$|og-image\\.svg$).*)",
+      "destination": "/"
+    }
   ]
 }

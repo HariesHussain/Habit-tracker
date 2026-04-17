@@ -13,6 +13,4 @@ export const KEYS = {
     templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
     publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
   },
-
-  geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY,
 };

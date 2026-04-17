@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { YearlyOverview } from './pages/YearlyOverview';
-import { ResetPassword } from './pages/ResetPassword';
-import { Profile } from './pages/Profile';
 import { Layout } from './components/Layout';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { SeoManager } from './components/SeoManager';
+
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const YearlyOverview = lazy(() => import('./pages/YearlyOverview').then((m) => ({ default: m.YearlyOverview })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then((m) => ({ default: m.ResetPassword })));
+const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
 
 const GlobalLoader = () => (
   <div className="fixed inset-0 bg-gray-950 flex flex-col items-center justify-center z-[9999] p-6 text-center">
@@ -55,36 +57,39 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/yearly"
-            element={
-              <ProtectedRoute>
-                <YearlyOverview />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        <SeoManager />
+        <Suspense fallback={<GlobalLoader />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/yearly"
+              element={
+                <ProtectedRoute>
+                  <YearlyOverview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );

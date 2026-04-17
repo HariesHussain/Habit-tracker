@@ -17,6 +17,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Habit } from '../types';
 import { calculateStreak } from '../lib/utils';
+import { sanitizeText, validateHabitTitle } from '../lib/security';
 
 const parseTimestamp = (val: any): Timestamp => {
   if (val instanceof Timestamp) return val;
@@ -65,13 +66,20 @@ export const useHabits = () => {
 
   const addHabit = async (title: string, category: string) => {
     if (!user) return;
+    const cleanTitle = sanitizeText(title, 60);
+    const cleanCategory = sanitizeText(category, 20);
+
+    if (!validateHabitTitle(cleanTitle)) {
+      throw new Error('Invalid habit title format.');
+    }
+
     try {
       const habitsRef = collection(db, 'users', user.uid, 'habits');
       const newHabitRef = doc(habitsRef);
       await setDoc(newHabitRef, {
         id: newHabitRef.id,
-        title,
-        category,
+        title: cleanTitle,
+        category: cleanCategory || 'General',
         streak: 0,
         completedDates: [],
         failedDates: [],

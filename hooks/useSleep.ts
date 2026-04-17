@@ -13,6 +13,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { SleepLog } from '../types';
 import { getSleepQuality } from '../lib/utils';
+import { clampNumber } from '../lib/security';
 
 export const useSleep = () => {
   const { user } = useAuth();
@@ -50,12 +51,13 @@ export const useSleep = () => {
 
   const logSleep = async (date: string, hours: number) => {
     if (!user) return;
-    const quality = getSleepQuality(hours);
+    const safeHours = clampNumber(hours, 0, 14);
+    const quality = getSleepQuality(safeHours);
     // Using modular doc and setDoc functions
     const logRef = doc(db, 'users', user.uid, 'sleep', date);
     await setDoc(logRef, {
       date,
-      hours,
+      hours: safeHours,
       quality
     });
   };

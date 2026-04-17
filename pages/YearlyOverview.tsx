@@ -188,25 +188,26 @@ export const YearlyOverview: React.FC = () => {
       <div className="bg-gray-900/50 border border-gray-800 rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full border-collapse">
+            <caption className="sr-only">Monthly historical habit completion records.</caption>
             <thead>
               <tr className="border-b border-gray-800/50 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                <th className="sticky left-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 text-left border-r border-gray-800/50 min-w-[120px] md:min-w-[180px]">Tasks</th>
+                <th scope="col" className="sticky left-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 text-left border-r border-gray-800/50 min-w-[120px] md:min-w-[180px]">Tasks</th>
                 {daysInMonth.map((day) => (
-                  <th key={day.toISOString()} className={`p-3 md:p-4 min-w-[42px] md:min-w-[50px] text-center ${formatDate(day) === todayStr ? 'bg-indigo-500/20 text-indigo-400' : ''}`}>
+                  <th scope="col" key={day.toISOString()} className={`p-3 md:p-4 min-w-[42px] md:min-w-[50px] text-center ${formatDate(day) === todayStr ? 'bg-indigo-500/20 text-indigo-400' : ''}`}>
                     {day.getDate()}
                   </th>
                 ))}
-                <th className="sticky right-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 border-l border-gray-800/50 w-12 md:w-20">Action</th>
+                <th scope="col" className="sticky right-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 border-l border-gray-800/50 w-12 md:w-20">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/50">
               {visibleHabitsDetail.length > 0 ? visibleHabitsDetail.map((habit) => (
                 <tr key={habit.id} className="group hover:bg-gray-800/20 transition-colors">
-                  <td className="sticky left-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 border-r border-gray-800/50 font-bold text-gray-200 truncate text-xs md:text-sm">
+                  <th scope="row" className="sticky left-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 md:p-6 border-r border-gray-800/50 font-bold text-gray-200 truncate text-xs md:text-sm">
                     <div className="flex flex-col">
                       <span>{habit.title}</span>
                     </div>
-                  </td>
+                  </th>
                   {daysInMonth.map((day) => {
                     const dStr = formatDate(day);
                     const isCompleted = habit.completedDates.includes(dStr);

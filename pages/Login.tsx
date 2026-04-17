@@ -12,6 +12,7 @@ import { CheckCircle2, Mail, Lock, User, ArrowRight, Loader2, ShieldAlert, Chevr
 import { auth, db } from '../lib/firebase';
 import { KEYS } from '../apiKeys';
 import emailjs from '@emailjs/browser';
+import { normalizeOtpInput, sanitizeEmail, sanitizeText, validateDisplayName, validateEmail, validatePassword } from '../lib/security';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'otp';
 
@@ -64,16 +65,15 @@ export const Login: React.FC = () => {
     }
   };
 
-  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    if (!validateEmail(email)) return setError("Invalid email.");
+    const cleanEmail = sanitizeEmail(email);
+    if (!validateEmail(cleanEmail)) return setError("Invalid email.");
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, cleanEmail);
       setSuccess("Check your inbox! Reset link sent.");
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err.code));
@@ -87,9 +87,11 @@ export const Login: React.FC = () => {
     setError("");
     setLoading(true);
     try {
+      const cleanName = sanitizeText(name, 50);
+      const cleanEmail = sanitizeEmail(email);
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(code);
-      await emailjs.send(KEYS.emailjs.serviceId, KEYS.emailjs.templateId, { to_name: name, to_email: email, otp: code }, KEYS.emailjs.publicKey);
+      await emailjs.send(KEYS.emailjs.serviceId, KEYS.emailjs.templateId, { to_name: cleanName, to_email: cleanEmail, otp: code }, KEYS.emailjs.publicKey);
       setResendTimer(60);
       setSuccess("Verification code sent!");
       return true;
@@ -104,8 +106,11 @@ export const Login: React.FC = () => {
   const startSignupFlow = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!validateEmail(email)) return setError("Invalid email.");
-    if (password.length < 6) return setError("Password too short.");
+    const cleanEmail = sanitizeEmail(email);
+    const cleanName = sanitizeText(name, 50);
+    if (!validateDisplayName(cleanName)) return setError("Name must be 2-50 letters.");
+    if (!validateEmail(cleanEmail)) return setError("Invalid email.");
+    if (!validatePassword(password)) return setError("Password must be at least 8 characters.");
     const sent = await sendOtpEmail();
     if (sent) setMode('otp');
   };
@@ -113,12 +118,19 @@ export const Login: React.FC = () => {
   const verifyOtpAndCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (otpInput !== generatedOtp) return setError("Invalid OTP");
+    const cleanOtp = normalizeOtpInput(otpInput);
+    const cleanEmail = sanitizeEmail(email);
+    const cleanName = sanitizeText(name, 50);
+
+    if (!validateDisplayName(cleanName)) return setError("Name must be 2-50 letters.");
+    if (!validateEmail(cleanEmail)) return setError("Invalid email.");
+    if (!validatePassword(password)) return setError("Password must be at least 8 characters.");
+    if (cleanOtp !== generatedOtp) return setError("Invalid OTP");
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: name });
-      await setDoc(doc(db, 'users', userCredential.user.uid), { uid: userCredential.user.uid, name, email, createdAt: Date.now() });
+      const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+      await updateProfile(userCredential.user, { displayName: cleanName });
+      await setDoc(doc(db, 'users', userCredential.user.uid), { uid: userCredential.user.uid, name: cleanName, email: cleanEmail, createdAt: Date.now() });
       navigate('/dashboard');
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err.code));
@@ -130,9 +142,11 @@ export const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const cleanEmail = sanitizeEmail(email);
+    if (!validateEmail(cleanEmail)) return setError("Invalid email.");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
       navigate('/dashboard');
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err.code));
@@ -143,7 +157,7 @@ export const Login: React.FC = () => {
 
   const ErrorAlert = () => (
     error ? (
-      <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in slide-in-from-top-1 duration-200">
+      <div role="alert" className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in slide-in-from-top-1 duration-200">
         <ShieldAlert className="w-5 h-5 shrink-0" />
         <p>{error}</p>
       </div>
@@ -179,7 +193,8 @@ export const Login: React.FC = () => {
                 type="text" 
                 maxLength={6} 
                 value={otpInput} 
-                onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, '')); setError(""); }} 
+                onChange={(e) => { setOtpInput(normalizeOtpInput(e.target.value)); setError(""); }} 
+                inputMode="numeric"
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl p-4 text-white text-2xl tracking-[0.5em] font-black focus:outline-none text-center" 
                 placeholder="000000" 
               />
@@ -193,7 +208,7 @@ export const Login: React.FC = () => {
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input required type="text" value={name} onChange={(e) => { setName(e.target.value); setError(""); }} className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="Your name" />
+                    <input required type="text" value={name} maxLength={50} onChange={(e) => { setName(sanitizeText(e.target.value, 50)); setError(""); }} className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="Your name" />
                   </div>
                 </div>
               )}
@@ -202,7 +217,7 @@ export const Login: React.FC = () => {
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input required type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="name@example.com" />
+                  <input required type="email" value={email} onChange={(e) => { setEmail(sanitizeEmail(e.target.value)); setError(""); }} className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="name@example.com" />
                 </div>
               </div>
 

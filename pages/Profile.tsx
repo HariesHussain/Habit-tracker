@@ -73,7 +73,7 @@ export const Profile: React.FC = () => {
             }
 
             // Step 3: Delete all sleepLogs subcollection
-            const sleepRef = collection(db, 'users', user.uid, 'sleepLogs');
+            const sleepRef = collection(db, 'users', user.uid, 'sleep');
             const sleepSnapshot = await getDocs(sleepRef);
             if (!sleepSnapshot.empty) {
                 const batch = writeBatch(db);
@@ -202,11 +202,11 @@ export const Profile: React.FC = () => {
 
             {/* Delete Account Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
                     <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] p-8 md:p-12 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="flex justify-between items-start mb-8">
                             <div>
-                                <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">Delete Account</h3>
+                                <h3 id="delete-account-title" className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">Delete Account</h3>
                                 <p className="text-[9px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">This action is permanent</p>
                             </div>
                             <button
@@ -236,6 +236,7 @@ export const Profile: React.FC = () => {
                                     <input
                                         required
                                         type="password"
+                                        minLength={8}
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setError(''); }}
                                         className="w-full bg-gray-950 border border-gray-800 rounded-2xl pl-12 pr-4 py-4 text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/30 placeholder:text-gray-700"
@@ -245,7 +246,7 @@ export const Profile: React.FC = () => {
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in duration-200">
+                                <div role="alert" className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in duration-200">
                                     <ShieldAlert className="w-5 h-5 shrink-0" />
                                     <p>{error}</p>
                                 </div>

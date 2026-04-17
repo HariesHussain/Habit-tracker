@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ShieldCheck
 } from 'lucide-react';
+import { validatePassword } from '../lib/security';
 
 export const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -47,7 +48,7 @@ export const ResetPassword: React.FC = () => {
     setError("");
     
     if (!oobCode) return;
-    if (newPassword.length < 6) return setError("Password must be at least 6 characters.");
+    if (!validatePassword(newPassword)) return setError("Password must be at least 8 characters.");
     if (newPassword !== confirmPassword) return setError("Passwords do not match.");
 
     setLoading(true);
@@ -64,7 +65,7 @@ export const ResetPassword: React.FC = () => {
 
   const ErrorAlert = () => (
     error ? (
-      <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in slide-in-from-top-1 duration-200">
+      <div role="alert" className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex gap-3 items-center animate-in fade-in slide-in-from-top-1 duration-200">
         <ShieldAlert className="w-5 h-5 shrink-0" />
         <p>{error}</p>
       </div>

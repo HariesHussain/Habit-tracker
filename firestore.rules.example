@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidHabit() {
+      return request.resource.data.keys().hasOnly([
+        'id',
+        'title',
+        'category',
+        'streak',
+        'completedDates',
+        'failedDates',
+        'createdAt'
+      ]) &&
+      request.resource.data.title is string &&
+      request.resource.data.title.size() > 0 &&
+      request.resource.data.title.size() <= 60 &&
+      request.resource.data.category is string &&
+      request.resource.data.category.size() > 0 &&
+      request.resource.data.category.size() <= 20 &&
+      request.resource.data.streak is int &&
+      request.resource.data.streak >= 0 &&
+      request.resource.data.completedDates is list &&
+      request.resource.data.failedDates is list;
+    }
+
+    function isValidSleep() {
+      return request.resource.data.keys().hasOnly(['date', 'hours', 'quality']) &&
+      request.resource.data.date is string &&
+      request.resource.data.hours is number &&
+      request.resource.data.hours >= 0 &&
+      request.resource.data.hours <= 14 &&
+      request.resource.data.quality in ['Good', 'Average', 'Poor'];
+    }
+
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isOwner(userId);
+
+      match /habits/{habitId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidHabit();
+        allow delete: if isOwner(userId);
+      }
+
+      match /sleep/{sleepId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidSleep();
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

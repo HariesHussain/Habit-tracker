@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { Moon, Plus, Activity, Zap } from 'lucide-react';
 import { SleepLog } from '../types';
 import { getTodayStr } from '../lib/utils';
+import { clampNumber } from '../lib/security';
 
 interface SleepTrackerProps {
   logs: SleepLog[];
@@ -179,7 +180,8 @@ export const SleepTracker: React.FC<SleepTrackerProps> = ({ logs, onLogSleep }) 
                 max="14"
                 step="0.5"
                 value={hours}
-                onChange={(e) => setHours(parseFloat(e.target.value))}
+                onChange={(e) => setHours(clampNumber(parseFloat(e.target.value), 0, 14))}
+                aria-label="Sleep hours"
                 className="w-full h-4 bg-gray-950 rounded-full appearance-none cursor-pointer accent-indigo-500 border border-gray-800"
               />
               <div className="flex justify-between text-[10px] text-gray-600 font-black px-1 uppercase tracking-[0.3em]">
@@ -192,7 +194,7 @@ export const SleepTracker: React.FC<SleepTrackerProps> = ({ logs, onLogSleep }) 
             <div className="flex flex-col gap-4 relative z-10">
               <button
                 onClick={() => {
-                  onLogSleep(todayStr, hours);
+                  onLogSleep(todayStr, clampNumber(hours, 0, 14));
                   setIsModalOpen(false);
                 }}
                 className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-[0.4em] text-xs transition-all shadow-2xl shadow-indigo-600/40 active:scale-95"

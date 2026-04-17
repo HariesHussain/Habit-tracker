@@ -1,20 +1,21 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Habit Tracker
 
-# Run and deploy your AI Studio app
+Premium habit and sleep tracker built with React, Vite, and Firebase.
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1OWCEDB2K1nVfocWc7z_VVQE--H6xjzqg
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Local Setup
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Copy environment variables:
+   `cp .env.example .env`
+3. Update the values in `.env` for Firebase, EmailJS, and server keys.
+4. Run the app:
    `npm run dev`
+
+## Production Notes
+
+- AI coaching now runs through `/api/v1/ai-coach`, so `GEMINI_API_KEY` stays server-side.
+- SEO files are in `public/` (`robots.txt`, `sitemap.xml`, verification files).
+- Optional IndexNow endpoint is available at `/api/v1/indexnow`.
+- Suggested Firestore rules are in `firestore.rules.example`.
+- Dependabot configuration is in `.github/dependabot.yml`.

@@ -1,31 +1,42 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Sparkles, BrainCircuit, Loader2, Calendar, Check, X, Trash2, Info, Cpu } from 'lucide-react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Sparkles, BrainCircuit, Loader2, Calendar, Check, X, Trash2 } from 'lucide-react';
 import { useHabits } from '../hooks/useHabits';
 import { useSleep } from '../hooks/useSleep';
-import { SleepTracker } from '../components/SleepTracker';
 import { HABIT_CATEGORIES, MONTHS } from '../constants';
-import { GoogleGenAI } from "@google/genai";
 import { getTodayStr, getDaysInMonth, formatDate } from '../lib/utils';
+import { sanitizeText, validateHabitTitle } from '../lib/security';
+
+const SleepTracker = lazy(() => import('../components/SleepTracker').then((m) => ({ default: m.SleepTracker })));
+const AI_COOLDOWN_MS = 30_000;
 
 export const Dashboard: React.FC = () => {
-  const { habits, addHabit, updateHabitStatus, deleteHabit, deleteMultipleHabits, loading: habitsLoading } = useHabits();
+  const { habits, addHabit, updateHabitStatus, deleteMultipleHabits, loading: habitsLoading } = useHabits();
   const { logs, logSleep } = useSleep();
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [newHabitCategory, setNewHabitCategory] = useState('General');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  
+  const [addHabitError, setAddHabitError] = useState('');
+
   const [aiCoachResponse, setAiCoachResponse] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiCooldownUntil, setAiCooldownUntil] = useState<number>(0);
 
   const todayStr = getTodayStr();
   const todayDate = new Date();
   const daysInMonth = getDaysInMonth(todayDate.getFullYear(), todayDate.getMonth());
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const scrollInitiated = useRef(false);
+
+  useEffect(() => {
+    const persisted = Number(localStorage.getItem('ai_coach_cooldown_until') || '0');
+    if (persisted > Date.now()) {
+      setAiCooldownUntil(persisted);
+    }
+  }, []);
 
   // Tablet-Aware Scroll to Today
   useEffect(() => {
@@ -39,7 +50,7 @@ export const Dashboard: React.FC = () => {
           const width = window.innerWidth;
           const stickyColumnWidth = width < 768 ? 110 : (width < 1024 ? 160 : 240);
           const elementLeft = todayHeader.offsetLeft;
-          
+
           container.scrollTo({
             left: Math.max(0, elementLeft - stickyColumnWidth - 20),
             behavior: 'smooth'
@@ -54,11 +65,13 @@ export const Dashboard: React.FC = () => {
   }, [habitsLoading, habits.length]);
 
   useEffect(() => {
-    getAiCoaching();
-  }, []);
+    if (!habitsLoading) {
+      getAiCoaching();
+    }
+  }, [habitsLoading]);
 
   const toggleSelect = (id: string) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -73,8 +86,15 @@ export const Dashboard: React.FC = () => {
 
   const handleAddHabit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHabitTitle.trim()) return;
-    await addHabit(newHabitTitle, newHabitCategory);
+    const cleanTitle = sanitizeText(newHabitTitle, 60);
+    setAddHabitError('');
+
+    if (!validateHabitTitle(cleanTitle)) {
+      setAddHabitError('Use 1-60 characters: letters, numbers, and basic punctuation.');
+      return;
+    }
+
+    await addHabit(cleanTitle, newHabitCategory);
     setNewHabitTitle('');
     setIsAddModalOpen(false);
   };
@@ -94,26 +114,47 @@ export const Dashboard: React.FC = () => {
     updateHabitStatus(habitId, dateStr, nextStatus);
   };
 
-  const getAiCoaching = async () => {
+  const getAiCoaching = useCallback(async () => {
+    if (Date.now() < aiCooldownUntil) {
+      return;
+    }
+
     setIsAiLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const habitsSummary = habits.length > 0 
-        ? habits.map(h => `${h.title} (${h.category})`).join(', ')
+      const habitsSummary = habits.length > 0
+        ? habits.map((h) => `${h.title} (${h.category})`)
         : "The user has no habits yet.";
-        
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `User habits context: [${habitsSummary}]. Current date: ${todayStr}. Task: Provide a brutal, elite, high-performance coaching quote (max 12 words). No emojis. No preamble.`,
+
+      const response = await fetch('/api/v1/ai-coach', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          habits: habitsSummary,
+          currentDate: todayStr,
+        }),
       });
-      
-      setAiCoachResponse(response.text?.trim().replace(/^"|"$/g, '') || "Excellence is not an act, but a habit.");
+
+      if (!response.ok) {
+        throw new Error(`AI request failed with status ${response.status}`);
+      }
+
+      const payload = await response.json() as { quote?: string };
+      setAiCoachResponse(payload.quote || 'Excellence is not an act, but a habit.');
+
+      const cooldownUntil = Date.now() + AI_COOLDOWN_MS;
+      setAiCooldownUntil(cooldownUntil);
+      localStorage.setItem('ai_coach_cooldown_until', String(cooldownUntil));
     } catch (error) {
+      console.error('AI coaching error:', error);
       setAiCoachResponse("Consistency is the only path to mastery.");
     } finally {
       setIsAiLoading(false);
     }
-  };
+  }, [aiCooldownUntil, habits, todayStr]);
+
+  const cooldownSeconds = Math.max(0, Math.ceil((aiCooldownUntil - Date.now()) / 1000));
 
   return (
     <div className="space-y-6 md:space-y-10 pb-32 animate-in fade-in duration-700">
@@ -132,11 +173,12 @@ export const Dashboard: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={getAiCoaching}
-            disabled={isAiLoading}
+            disabled={isAiLoading || cooldownSeconds > 0}
+            aria-label={cooldownSeconds > 0 ? `AI refresh available in ${cooldownSeconds} seconds` : 'Refresh AI coaching'}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all active:scale-95 disabled:opacity-50"
           >
             {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
-            <span className="hidden sm:inline">Refresh AI</span>
+            <span className="hidden sm:inline">{cooldownSeconds > 0 ? `Cooldown ${cooldownSeconds}s` : 'Refresh AI'}</span>
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -151,14 +193,16 @@ export const Dashboard: React.FC = () => {
       <div className="bg-gray-900/40 border border-gray-800/50 rounded-2xl md:rounded-[3rem] overflow-hidden shadow-2xl relative">
         <div className="overflow-x-auto scrollbar-hide touch-pan-x" ref={tableContainerRef}>
           <table className="w-full border-separate border-spacing-y-2 border-spacing-x-1 md:border-spacing-y-3 md:border-spacing-x-2 px-2 md:px-4 pb-4 md:pb-6">
+            <caption className="sr-only">Daily habit status tracker for the current month.</caption>
             <thead>
               <tr>
-                <th className="sticky left-0 z-20 bg-gray-950/90 backdrop-blur-xl p-3 md:p-5 lg:p-6 text-left rounded-2xl md:rounded-3xl min-w-[110px] md:min-w-[160px] lg:min-w-[240px]">
+                <th scope="col" className="sticky left-0 z-20 bg-gray-950/90 backdrop-blur-xl p-3 md:p-5 lg:p-6 text-left rounded-2xl md:rounded-3xl min-w-[110px] md:min-w-[160px] lg:min-w-[240px]">
                   <div className="flex items-center gap-2 md:gap-4">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={habits.length > 0 && selectedIds.length === habits.length}
                       onChange={toggleSelectAll}
+                      aria-label="Select all habits"
                       className="w-4 h-4 md:w-5 md:h-5 rounded-lg border-gray-700 bg-gray-800 text-emerald-500 cursor-pointer accent-emerald-500"
                     />
                     <span className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Protocol</span>
@@ -168,8 +212,9 @@ export const Dashboard: React.FC = () => {
                   const dStr = formatDate(day);
                   const isToday = dStr === todayStr;
                   return (
-                    <th 
+                    <th
                       key={dStr}
+                      scope="col"
                       data-today={isToday}
                       className={`p-2 md:p-4 text-[9px] md:text-[10px] font-black transition-all min-w-[48px] md:min-w-[56px] text-center uppercase tracking-widest rounded-xl md:rounded-2xl
                         ${isToday ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-gray-600'}
@@ -186,12 +231,13 @@ export const Dashboard: React.FC = () => {
                 const isSelected = selectedIds.includes(habit.id);
                 return (
                   <tr key={habit.id} className="group">
-                    <td className={`sticky left-0 z-20 bg-gray-950/90 backdrop-blur-xl p-3 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl transition-all ${isSelected ? 'ring-2 ring-emerald-500/50' : 'group-hover:bg-gray-900/80'}`}>
+                    <th scope="row" className={`sticky left-0 z-20 bg-gray-950/90 backdrop-blur-xl p-3 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl transition-all ${isSelected ? 'ring-2 ring-emerald-500/50' : 'group-hover:bg-gray-900/80'}`}>
                       <div className="flex items-center gap-2 md:gap-4">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelect(habit.id)}
+                          aria-label={`Select ${habit.title}`}
                           className="w-4 h-4 md:w-5 md:h-5 rounded-lg border-gray-700 bg-gray-800 text-emerald-500 cursor-pointer accent-emerald-500"
                         />
                         <div className="flex flex-col min-w-0">
@@ -201,7 +247,7 @@ export const Dashboard: React.FC = () => {
                           <span className="text-[7px] md:text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-0.5 truncate">{habit.category}</span>
                         </div>
                       </div>
-                    </td>
+                    </th>
                     {daysInMonth.map((day) => {
                       const dStr = formatDate(day);
                       const isToday = dStr === todayStr;
@@ -211,12 +257,12 @@ export const Dashboard: React.FC = () => {
 
                       return (
                         <td key={`${habit.id}-${dStr}`} className="p-0">
-                          <div 
+                          <div
                             onClick={() => isToday && cycleStatus(habit.id, dStr, status)}
                             className={`
                               flex items-center justify-center h-12 md:h-14 w-full rounded-xl md:rounded-2xl transition-all
-                              ${isToday 
-                                ? 'cursor-pointer ring-1 md:ring-2 ring-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-90' 
+                              ${isToday
+                                ? 'cursor-pointer ring-1 md:ring-2 ring-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-90'
                                 : 'cursor-default bg-gray-900/20 border border-gray-800/10'
                               }
                               ${isCompleted ? '!bg-emerald-500/20 !border-emerald-500/30 ring-0 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : ''}
@@ -253,7 +299,15 @@ export const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         <div className="md:col-span-2 lg:col-span-2 order-1 lg:order-1">
-          <SleepTracker logs={logs} onLogSleep={logSleep} />
+          <Suspense
+            fallback={
+              <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl min-h-[360px] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+              </div>
+            }
+          >
+            <SleepTracker logs={logs} onLogSleep={logSleep} />
+          </Suspense>
         </div>
         <div className="md:col-span-2 lg:col-span-1 bg-gray-900/60 border border-gray-800 rounded-2xl md:rounded-[3rem] p-8 md:p-10 flex flex-col justify-center relative overflow-hidden group shadow-2xl min-h-[260px] md:min-h-[340px] order-2 lg:order-2">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 blur-[80px] rounded-full" />
@@ -264,14 +318,14 @@ export const Dashboard: React.FC = () => {
               </div>
               <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic">Neuro Link</h3>
             </div>
-            
+
             {aiCoachResponse ? (
               <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-2 duration-700">
-                 <p className="text-gray-200 text-lg md:text-3xl font-black leading-tight italic tracking-tight">
-                   "{aiCoachResponse}"
-                 </p>
-                 <div className="h-px w-20 md:w-24 bg-emerald-500/30" />
-                 <p className="text-[8px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em]">Protocol: Optimization active</p>
+                <p className="text-gray-200 text-lg md:text-3xl font-black leading-tight italic tracking-tight">
+                  "{aiCoachResponse}"
+                </p>
+                <div className="h-px w-20 md:w-24 bg-emerald-500/30" />
+                <p className="text-[8px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em]">Protocol: Optimization active</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -284,14 +338,14 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="add-habit-title">
           <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] md:rounded-[3.5rem] p-8 md:p-12 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-start mb-8 md:mb-12">
-               <div>
-                  <h3 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter italic">Initiate</h3>
-                  <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em] mt-1">New Neural Track</p>
-               </div>
-               <button onClick={() => setIsAddModalOpen(false)} className="p-3 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-gray-400 transition-all"><X className="w-5 h-5"/></button>
+              <div>
+                <h3 id="add-habit-title" className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter italic">Initiate</h3>
+                <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em] mt-1">New Neural Track</p>
+              </div>
+              <button onClick={() => setIsAddModalOpen(false)} className="p-3 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-gray-400 transition-all"><X className="w-5 h-5" /></button>
             </div>
 
             <form onSubmit={handleAddHabit} className="space-y-8 md:space-y-10">
@@ -302,9 +356,12 @@ export const Dashboard: React.FC = () => {
                   type="text"
                   placeholder="e.g. MORNING SUNLIGHT"
                   value={newHabitTitle}
-                  onChange={(e) => setNewHabitTitle(e.target.value)}
+                  maxLength={60}
+                  onChange={(e) => { setNewHabitTitle(e.target.value); setAddHabitError(''); }}
+                  aria-invalid={Boolean(addHabitError)}
                   className="w-full bg-gray-950 border border-gray-800 rounded-2xl md:rounded-3xl px-6 py-5 md:px-8 md:py-6 text-white font-black uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-emerald-500/10 placeholder:text-gray-800 text-sm md:text-lg"
                 />
+                {addHabitError && <p className="text-rose-400 text-xs font-bold mt-2">{addHabitError}</p>}
               </div>
               <div className="space-y-3">
                 <label className="text-[9px] md:text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] ml-1">Classification</label>
@@ -314,11 +371,10 @@ export const Dashboard: React.FC = () => {
                       key={cat}
                       type="button"
                       onClick={() => setNewHabitCategory(cat)}
-                      className={`px-3 py-4 md:px-4 md:py-5 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border transition-all ${
-                        newHabitCategory === cat 
-                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' 
-                        : 'bg-gray-950 border-gray-800 text-gray-600 hover:border-gray-700'
-                      }`}
+                      className={`px-3 py-4 md:px-4 md:py-5 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border transition-all ${newHabitCategory === cat
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+                          : 'bg-gray-950 border-gray-800 text-gray-600 hover:border-gray-700'
+                        }`}
                     >
                       {cat}
                     </button>
@@ -366,12 +422,12 @@ export const Dashboard: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="delete-habits-title">
           <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] p-8 md:p-12 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-300 text-center">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6">
               <Trash2 className="w-8 h-8 text-rose-400" />
             </div>
-            <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic mb-2">Confirm Wipe</h3>
+            <h3 id="delete-habits-title" className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic mb-2">Confirm Wipe</h3>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mb-8">
               {selectedIds.length} protocol{selectedIds.length > 1 ? 's' : ''} will be permanently erased
             </p>

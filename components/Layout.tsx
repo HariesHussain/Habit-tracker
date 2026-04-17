@@ -33,7 +33,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </h1>
         </div>
 
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-2" aria-label="Primary navigation">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -81,13 +81,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
           <span className="font-black text-lg md:text-xl tracking-tighter uppercase italic text-white">Habit Tracker</span>
         </div>
-        <button onClick={handleSignOut} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors">
+        <button onClick={handleSignOut} aria-label="Sign out" className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors">
           <LogOut className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5px]" />
         </button>
       </header>
 
       {/* Mobile & Tablet Bottom Navigation (Below 1024px) */}
-      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[90] bg-gray-900/90 backdrop-blur-2xl border border-white/5 px-6 py-4 flex items-center justify-around rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <nav aria-label="Mobile navigation" className="lg:hidden fixed bottom-6 left-4 right-4 z-[90] bg-gray-900/90 backdrop-blur-2xl border border-white/5 px-6 py-4 flex items-center justify-around rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         {navItems.map((item) => (
           <Link
             key={item.path}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Habit Tracker cover image">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1050" cy="120" r="170" fill="#10b981" opacity="0.12" />
+  <circle cx="140" cy="530" r="210" fill="#06b6d4" opacity="0.1" />
+  <rect x="120" y="170" width="960" height="300" rx="36" fill="#0b1220" stroke="#1f2937" />
+  <text x="170" y="290" fill="#e5e7eb" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800">
+    Habit Tracker
+  </text>
+  <text x="170" y="360" fill="#9ca3af" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500">
+    Track consistency. Build momentum.
+  </text>
+  <rect x="170" y="395" width="420" height="10" rx="5" fill="url(#accent)" />
+</svg>
