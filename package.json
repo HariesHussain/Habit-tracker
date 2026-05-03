@@ -12,17 +12,17 @@
     "@emailjs/browser": "^4.4.1",
     "firebase": "^11.3.1",
     "lucide-react": "^0.475.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.12.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
     "recharts": "^2.15.1"
   },
   "devDependencies": {
-    "@types/react": "^19.0.8",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.13",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.4.2"
